@@ -1,7 +1,10 @@
 import express from 'express'
 import usersRouter from './routes/users.route'
+import databaseServices from './services/database.services'
+
 const app = express()
 const port = 3000
+databaseServices.connect()
 app.use(express.json())
 app.use('/api', usersRouter)
 

@@ -6,6 +6,12 @@ enum UserVerifyStatus {
   Banned
 }
 
+export enum TokenType {
+  AccessToken,
+  RefreshToken,
+  ForgotPasswordToken,
+  EmailVerifiedToken
+}
 interface UserType {
   _id?: ObjectId
   name: string

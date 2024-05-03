@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { checkSchema } from 'express-validator'
+import databaseServices from '~/services/database.services'
 import { validate } from '~/utils/validation'
 
 export const usersMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -25,7 +26,17 @@ export const registerValidator = validate(
       errorMessage: 'Invalid email',
       notEmpty: true,
       isEmail: true,
-      trim: true
+      trim: true,
+      custom: {
+        options: (value) => {
+          return databaseServices.users.findOne({ email: value }).then((user) => {
+            if (user) {
+              throw new Error('Email already exists')
+            }
+            return true
+          })
+        }
+      }
     },
     password: {
       errorMessage: 'Invalid password',

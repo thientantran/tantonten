@@ -8,8 +8,8 @@ export const loginController = (req: Request, res: Response) => {
 }
 
 export const registerController = async (req: Request, res: Response) => {
-  const { email, password } = req.body
-  const newUser = new User({ email, password })
+  const { email, password, name, date_of_birth } = req.body
+  const newUser = new User({ email, password, name, date_of_birth })
   try {
     const response = await databaseServices.users.insertOne(newUser)
     console.log(response)

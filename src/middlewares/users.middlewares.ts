@@ -15,7 +15,9 @@ export const registerValidator = validate(
   checkSchema({
     name: {
       errorMessage: 'Invalid name',
-      notEmpty: true,
+      notEmpty: {
+        errorMessage: 'Name is required'
+      },
       isLength: {
         options: { min: 1, max: 100 }
       },
@@ -24,8 +26,12 @@ export const registerValidator = validate(
     },
     email: {
       errorMessage: 'Invalid email',
-      notEmpty: true,
-      isEmail: true,
+      notEmpty: {
+        errorMessage: 'Email is required'
+      },
+      isEmail: {
+        errorMessage: 'Invalid email'
+      },
       trim: true,
       custom: {
         options: (value) => {
@@ -40,12 +46,23 @@ export const registerValidator = validate(
     },
     password: {
       errorMessage: 'Invalid password',
-      notEmpty: true,
+      notEmpty: { errorMessage: 'Password is required' },
       isLength: {
-        options: { min: 6, max: 100 }
+        options: { min: 6, max: 100 },
+        errorMessage: 'Password must be at least 6 characters'
       },
-      isString: true
-      // isStrongPassword: true
+      isString: true,
+      isStrongPassword: {
+        options: {
+          minLength: 6,
+          minLowercase: 1,
+          minUppercase: 1,
+          minNumbers: 1,
+          minSymbols: 0
+        },
+        errorMessage:
+          'Password must be at least 6 characters and contain at least 1 lowercase letter, 1 uppercase letter, and 1 number'
+      }
     },
     confirm_password: {
       errorMessage: 'Passwords do not match',

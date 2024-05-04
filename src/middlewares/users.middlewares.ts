@@ -31,7 +31,7 @@ export const registerValidator = validate(
         options: (value) => {
           return databaseServices.users.findOne({ email: value }).then((user) => {
             if (user) {
-              throw new Error('Email already exists')
+              throw { message: 'Email already exists', status: 401 }
             }
             return true
           })

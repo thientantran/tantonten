@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from 'express'
+import { omit } from 'lodash'
 import usersRouter from './routes/users.route'
 import databaseServices from './services/database.services'
 
@@ -13,9 +14,7 @@ app.get('/', (req, res) => {
 })
 //error handling middleware phai de cuoi cung
 app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
-  res.status(400).json({
-    message: error.message
-  })
+  res.status(error.status || 500).json(omit(error, ['status']))
 })
 
 app.listen(port, () => {

@@ -10,7 +10,37 @@ export const usersMiddleware = (req: Request, res: Response, next: NextFunction)
   }
   next()
 }
-
+export const loginValidator = validate(
+  checkSchema({
+    email: {
+      errorMessage: 'Invalid email',
+      notEmpty: {
+        errorMessage: 'Email is required'
+      },
+      isEmail: {
+        errorMessage: 'Invalid email'
+      },
+      trim: true,
+      custom: {
+        options: async (value, { req }) => {
+          const user = await databaseServices.users.findOne({ email: value })
+          if (!user) {
+            throw { message: 'User does not exist ', status: 401 }
+          }
+          req.user = user
+          return true
+        }
+      }
+    },
+    password: {
+      errorMessage: 'Invalid password',
+      notEmpty: {
+        errorMessage: 'Password is required'
+      },
+      isString: true
+    }
+  })
+)
 export const registerValidator = validate(
   checkSchema({
     name: {

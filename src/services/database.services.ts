@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import { Collection, Db, MongoClient } from 'mongodb'
+import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { User } from '~/models/schemas/User.schema'
 dotenv.config()
 
@@ -24,6 +25,10 @@ class DatabaseService {
 
   get users(): Collection<User> {
     return this.db.collection('users')
+  }
+
+  get refreshToken(): Collection<RefreshToken> {
+    return this.db.collection('refresh_token')
   }
 }
 

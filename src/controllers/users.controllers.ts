@@ -3,9 +3,9 @@ import { NextFunction, Request, Response } from 'express'
 import * as core from 'express-serve-static-core'
 import { ObjectId } from 'mongodb'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
-import { User } from '~/models/schemas/User.schema'
+import { User, UserVerifyStatus } from '~/models/schemas/User.schema'
 import databaseServices from '~/services/database.services'
-import { generateAccessToken, generateRefreshToken } from '~/utils/jwt'
+import { generateAccessToken, generateEmailToken, generateRefreshToken } from '~/utils/jwt'
 // functions for hasing password, can use bcryptjs instead
 function sha256(content: string) {
   return createHash('sha256').update(content).digest('hex')
@@ -18,21 +18,25 @@ function hashPassword(password: string) {
 export const registerController = async (req: Request, res: Response, next: NextFunction) => {
   const { email, password, name, date_of_birth } = req.body
   const hashedPassword = hashPassword(password)
-  const newUser = new User({ email, password: hashedPassword, name, date_of_birth })
+  const user_id = new ObjectId()
+  const email_verified_token = await generateEmailToken(user_id.toString())
+  const newUser = new User({ _id: user_id, email, password: hashedPassword, name, date_of_birth, email_verified_token })
 
   const response = await databaseServices.users.insertOne(newUser)
-  const [accessToken, refreshToken] = await Promise.all([
-    generateAccessToken(response.insertedId.toString()),
-    generateRefreshToken(response.insertedId.toString())
-  ])
-  await databaseServices.refreshToken.insertOne(new RefreshToken({ user_id: response.insertedId, token: refreshToken }))
+
+  await databaseServices.users.updateOne(
+    { _id: response.insertedId },
+    { $set: { email_verified_token: email_verified_token } }
+  )
+  // ko can tao accesstoken hay refreshtoken khi dang ky, chi can verify email
   return res.json({
     message: 'User created successfully',
     data: {
-      ...newUser,
-      access_token: accessToken,
-      refresh_token: refreshToken,
-      _id: response.insertedId
+      ...newUser
+      // remove để phải verify email
+      // access_token: accessToken,
+      // refresh_token: refreshToken,
+      // _id: response.insertedId
     }
   })
 }
@@ -73,4 +77,43 @@ export const logoutController = async (req: Request<core.ParamsDictionary, any, 
 
   console.log(result)
   return res.json({ message: 'Logout success' })
+}
+
+export const emailVeryfiedController = async (req: Request, res: Response) => {
+  const { decode_email_verify_token }: any = req
+  // console.log(token)
+  const user = await databaseServices.users.findOne({
+    _id: new ObjectId(decode_email_verify_token.userId)
+  })
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' })
+  }
+  if (user.email_verified_token === '') {
+    return res.json({ message: 'Email already verified' })
+  }
+  try {
+    const result = await databaseServices.users.updateOne(
+      { _id: new ObjectId(decode_email_verify_token.userId) },
+      { $set: { email_verified_token: '', verify: UserVerifyStatus.Verified, updated_at: new Date() } }
+    )
+    const [accessToken, refreshToken] = await Promise.all([
+      generateAccessToken(user._id.toString()),
+      generateRefreshToken(user._id.toString())
+    ])
+    await databaseServices.refreshToken.insertOne(
+      new RefreshToken({ user_id: new ObjectId(user._id), token: refreshToken })
+    )
+    return res.json({
+      message: 'Email verified',
+      data: {
+        ...user,
+        email_verified_token: '',
+        verify: UserVerifyStatus.Verified,
+        access_token: accessToken,
+        refresh_token: refreshToken
+      }
+    })
+  } catch (error) {
+    return res.status(500).json({ message: 'Internal server error' })
+  }
 }

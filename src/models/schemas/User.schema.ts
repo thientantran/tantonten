@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb'
 
-enum UserVerifyStatus {
+export enum UserVerifyStatus {
   Unverified, // chua xac thuc
   Verified,
   Banned

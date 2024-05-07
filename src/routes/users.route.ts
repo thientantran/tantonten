@@ -1,7 +1,13 @@
 import { Router } from 'express'
-import { loginController, logoutController, registerController } from '~/controllers/users.controllers'
+import {
+  emailVeryfiedController,
+  loginController,
+  logoutController,
+  registerController
+} from '~/controllers/users.controllers'
 import {
   accessTokenValidator,
+  emailTokenValidator,
   loginValidator,
   refreshTokenValidator,
   registerValidator
@@ -13,6 +19,7 @@ const usersRouter = Router()
 usersRouter.post('/register', registerValidator, wrapSync(registerController))
 usersRouter.post('/login', loginValidator, loginController)
 usersRouter.post('/logout', accessTokenValidator, refreshTokenValidator, logoutController)
+usersRouter.get('/verify-email', emailTokenValidator, emailVeryfiedController)
 // Define your routes here
 
 export default usersRouter

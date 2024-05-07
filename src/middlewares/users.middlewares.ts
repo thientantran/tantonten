@@ -202,3 +202,34 @@ export const refreshTokenValidator = validate(
     ['body']
   )
 )
+
+export const emailTokenValidator = validate(
+  checkSchema(
+    {
+      email_verified_token: {
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            if (!value) {
+              throw { message: 'Email verify token is required', status: 401 }
+            }
+            try {
+              const decode_email_verify_token = await verifyToken({ token: value, secretOrPublicKey: process.env.JWT_EMAIL_KEY as string })
+              req.decode_email_verify_token = decode_email_verify_token
+              return true
+            } catch (error) {
+              if (error instanceof jwt.JsonWebTokenError) {
+                throw { message: error.message, status: 401 }
+              } else {
+                throw { message: "Email verify token is invalid", status: 401 }
+              }
+
+            }
+
+          }
+        }
+      }
+    },
+    ['query']
+  )
+)

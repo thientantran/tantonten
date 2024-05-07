@@ -1,11 +1,11 @@
 import { createHash } from 'crypto'
 import { NextFunction, Request, Response } from 'express'
+import * as core from 'express-serve-static-core'
 import { ObjectId } from 'mongodb'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { User } from '~/models/schemas/User.schema'
 import databaseServices from '~/services/database.services'
 import { generateAccessToken, generateRefreshToken } from '~/utils/jwt'
-
 // functions for hasing password, can use bcryptjs instead
 function sha256(content: string) {
   return createHash('sha256').update(content).digest('hex')
@@ -60,10 +60,12 @@ export const loginController = async (req: Request, res: Response) => {
   })
 }
 
-export const logoutController = async (req: Request, res: Response) => {
-  const { decode_authorization }: any = req
+interface LogoutReqBody {
+  refresh_token: string
+}
+export const logoutController = async (req: Request<core.ParamsDictionary, any, LogoutReqBody>, res: Response) => {
+  const { decode_authorization, decode_refresh_token }: any = req
   const { refresh_token } = req.body
-  console.log(refresh_token)
   const result = await databaseServices.refreshToken.deleteOne({
     user_id: new ObjectId(decode_authorization.userId),
     token: refresh_token

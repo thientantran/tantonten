@@ -147,7 +147,7 @@ export const accessTokenValidator = validate(
               if (!token) {
                 throw { message: 'Authorization header is required', status: 401 }
               }
-              const decode_authorization = await verifyToken({ token })
+              const decode_authorization = await verifyToken({ token, secretOrPublicKey: process.env.JWT_SECRET as string })
               req.decode_authorization = decode_authorization
               return true
             } catch (error) {
@@ -166,14 +166,18 @@ export const refreshTokenValidator = validate(
   checkSchema(
     {
       refresh_token: {
-        notEmpty: {
-          errorMessage: 'Refresh token is required'
-        },
+        // notEmpty: {
+        //   errorMessage: 'Refresh token is required'
+        // },
+        // tra ve loi 422, nhung muon tra ve loi 401
         custom: {
           options: async (value, { req }) => {
             try {
+              if (!value) {
+                throw { message: 'Refresh is required', status: 401 }
+              }
               const [decode_refresh_token, refresh_token] = await Promise.all([
-                verifyToken({ token: value }),
+                verifyToken({ token: value, secretOrPublicKey: process.env.JWT_REFRESH_KEY as string }),
                 databaseServices.refreshToken.findOne({ token: value })
               ])
               if (!refresh_token) {

@@ -37,7 +37,7 @@ export async function generateRefreshToken(userId: string): Promise<string> {
 
   // return jwt.sign(payload, secretKey, options)
   return new Promise<string>((resolve, reject) => {
-    jwt.sign(payload, process.env.JWT_SECRET as string, options, (err, token) => {
+    jwt.sign(payload, process.env.JWT_REFRESH_KEY as string, options, (err, token) => {
       if (err) {
         reject(err)
       }
@@ -46,13 +46,7 @@ export async function generateRefreshToken(userId: string): Promise<string> {
   })
 }
 
-export const verifyToken = ({
-  token,
-  secretOrPublicKey = process.env.JWT_SECRET
-}: {
-  token: string
-  secretOrPublicKey?: string
-}) => {
+export const verifyToken = ({ token, secretOrPublicKey }: { token: string; secretOrPublicKey: string }) => {
   return new Promise<jwt.JwtPayload>((resolve, reject) => {
     jwt.verify(token, secretOrPublicKey as Secret, (err, decoded) => {
       if (err) {

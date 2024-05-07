@@ -58,3 +58,7 @@ export const loginController = async (req: Request, res: Response) => {
     }
   })
 }
+
+export const logoutController = async (req: Request, res: Response) => {
+  return res.json({ message: 'Logout successful' })
+}

@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { Secret } from 'jsonwebtoken'
 import { TokenType } from '~/models/schemas/User.schema'
 
 // xử dụng bất đồng bộ, để khi generate 2 token cùng lúc, nó sẽ chạy song song
@@ -42,6 +42,24 @@ export async function generateRefreshToken(userId: string): Promise<string> {
         reject(err)
       }
       resolve(token as string)
+    })
+  })
+}
+
+export const verifyToken = ({
+  token,
+  secretOrPublicKey = process.env.JWT_SECRET
+}: {
+  token: string
+  secretOrPublicKey?: string
+}) => {
+  return new Promise<jwt.JwtPayload>((resolve, reject) => {
+    jwt.verify(token, secretOrPublicKey as Secret, (err, decoded) => {
+      if (err) {
+        // return reject(err)
+        throw { message: 'Invalid Authorization', status: 401 }
+      }
+      resolve(decoded as jwt.JwtPayload)
     })
   })
 }

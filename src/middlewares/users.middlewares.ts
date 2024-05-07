@@ -1,5 +1,7 @@
+/* eslint-disable prettier/prettier */
 import { NextFunction, Request, Response } from 'express'
 import { checkSchema } from 'express-validator'
+import jwt from 'jsonwebtoken'
 import databaseServices from '~/services/database.services'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
@@ -137,20 +139,62 @@ export const accessTokenValidator = validate(
       Authorization: {
         custom: {
           options: async (value, { req }) => {
-            if (!value) {
-              throw { message: 'Authorization header is required', status: 401 }
+            try {
+              if (!value) {
+                throw { message: 'Authorization header is required', status: 401 }
+              }
+              const token = value.split(' ')[1]
+              if (!token) {
+                throw { message: 'Authorization header is required', status: 401 }
+              }
+              const decode_authorization = await verifyToken({ token })
+              req.decode_authorization = decode_authorization
+              return true
+            } catch (error) {
+              throw { message: 'Invalid Authorization', status: 401 }
             }
-            const token = value.split(' ')[1]
-            if (!token) {
-              throw { message: 'Authorization header is required', status: 401 }
-            }
-            const decode_authorization = await verifyToken({ token })
-            req.decode_authorization = decode_authorization
-            return true
           }
         }
       }
     },
     ['headers']
+  )
+)
+
+
+export const refreshTokenValidator = validate(
+  checkSchema(
+    {
+      refresh_token: {
+        notEmpty: {
+          errorMessage: 'Refresh token is required'
+        },
+        custom: {
+          options: async (value, { req }) => {
+            try {
+              const [decode_refresh_token, refresh_token] = await Promise.all([
+                verifyToken({ token: value }),
+                databaseServices.refreshToken.findOne({ token: value })
+              ])
+              if (!refresh_token) {
+                throw { message: 'Refresh token does not exist', status: 401 }
+                // chỗ này nó sẽ through 1 cái erro, thì nó sẽ xuống phần catch và trả về error mặc định trong đó, chứ ko phải là refresh token không tồn tại, do đó phải custome lại cái catch
+              }
+              req.decode_refresh_token = decode_refresh_token
+              req.refresh_token = refresh_token
+              return true
+            } catch (error) {
+              // throw { message: 'Invalid refresh token', status: 401 }
+              if (error instanceof jwt.JsonWebTokenError) {
+                throw { message: error.message, status: 401 }
+              } else {
+                throw error
+              }
+            }
+          }
+        }
+      }
+    },
+    ['body']
   )
 )

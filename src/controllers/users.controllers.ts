@@ -46,6 +46,7 @@ export const loginController = async (req: Request, res: Response) => {
     generateAccessToken(user._id.toString()),
     generateRefreshToken(user._id.toString())
   ])
+  // chú ý source code hiện tại mỗi lần login thì sẽ tao ra 1 refresh token mới, và lưu vào db, nên khi logout thì sẽ xóa refresh token đó đi, login 2 lần có 2 lần refresh token, logout 1 lần thì xóa 1 cái refresh token ==> login nhiều máy tính, nên thêm 1 tính năng là logout hết máy thì có 1 button, click thì sẽ xoá hết các refresh token
   await databaseServices.refreshToken.insertOne(
     new RefreshToken({ user_id: new ObjectId(user._id), token: refreshToken })
   )
@@ -60,5 +61,14 @@ export const loginController = async (req: Request, res: Response) => {
 }
 
 export const logoutController = async (req: Request, res: Response) => {
-  return res.json({ message: 'Logout successful' })
+  const { decode_authorization }: any = req
+  const { refresh_token } = req.body
+  console.log(refresh_token)
+  const result = await databaseServices.refreshToken.deleteOne({
+    user_id: new ObjectId(decode_authorization.userId),
+    token: refresh_token
+  })
+
+  console.log(result)
+  return res.json({ message: 'Logout success' })
 }

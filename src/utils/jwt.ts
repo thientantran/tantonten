@@ -56,8 +56,9 @@ export const verifyToken = ({
   return new Promise<jwt.JwtPayload>((resolve, reject) => {
     jwt.verify(token, secretOrPublicKey as Secret, (err, decoded) => {
       if (err) {
-        // return reject(err)
-        throw { message: 'Invalid Authorization', status: 401 }
+        // nễu để như vậy sẽ trả về 422,  chuyển như dưới sẽ trả về 401, nhưng có cả verify 2 loại token, nên cứ để vậy, rồi qua bên validate sẽ xử lý cho từng loại token
+        return reject(err)
+        // throw { message: 'Invalid Authorization', status: 401 }
       }
       resolve(decoded as jwt.JwtPayload)
     })

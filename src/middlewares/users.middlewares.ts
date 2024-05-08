@@ -2,6 +2,7 @@
 import { NextFunction, Request, Response } from 'express'
 import { checkSchema } from 'express-validator'
 import jwt from 'jsonwebtoken'
+import { ObjectId } from 'mongodb'
 import databaseServices from '~/services/database.services'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
@@ -256,5 +257,41 @@ export const emailValidator = validate(
       }
     },
     ['body']
+  )
+)
+
+export const ForgotPasswordTokenValidator = validate(
+  checkSchema(
+    {
+      forgot_password_token: {
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            if (!value) {
+              throw { message: 'forgot password token is required', status: 401 }
+            }
+            try {
+              const decode_forgot_password_token = await verifyToken({ token: value, secretOrPublicKey: process.env.JWT_FORGOTPASSWORD_KEY as string })
+              const user = await databaseServices.users.findOne({ _id: new ObjectId(decode_forgot_password_token.userId) })
+              if (!user) {
+                return { message: 'User not found', status: 404 }
+              }
+              if (user.forgot_password_token !== value) {
+                throw { message: 'Forgot Password token is invalid', status: 401 }
+              }
+              req.user = user
+              return true
+            } catch (error) {
+              if (error instanceof jwt.JsonWebTokenError) {
+                throw { message: error.message, status: 401 }
+              } else {
+                throw { message: "Forgot Password token is invalid", status: 401 }
+              }
+            }
+          }
+        }
+      }
+    },
+    ['query']
   )
 )

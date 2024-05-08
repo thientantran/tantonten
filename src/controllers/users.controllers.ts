@@ -19,7 +19,11 @@ export const registerController = async (req: Request, res: Response, next: Next
   const { email, password, name, date_of_birth } = req.body
   const hashedPassword = hashPassword(password)
   const user_id = new ObjectId()
-  const email_verified_token = await generateEmailToken(user_id.toString())
+  const [accessToken, refreshToken, email_verified_token] = await Promise.all([
+    generateAccessToken(user_id.toString()),
+    generateRefreshToken(user_id.toString()),
+    generateEmailToken(user_id.toString())
+  ])
   const newUser = new User({ _id: user_id, email, password: hashedPassword, name, date_of_birth, email_verified_token })
 
   const response = await databaseServices.users.insertOne(newUser)
@@ -32,10 +36,9 @@ export const registerController = async (req: Request, res: Response, next: Next
   return res.json({
     message: 'User created successfully',
     data: {
-      ...newUser
-      // remove để phải verify email
-      // access_token: accessToken,
-      // refresh_token: refreshToken,
+      ...newUser,
+      access_token: accessToken,
+      refresh_token: refreshToken
       // _id: response.insertedId
     }
   })
@@ -94,7 +97,7 @@ export const emailVeryfiedController = async (req: Request, res: Response) => {
   try {
     const result = await databaseServices.users.updateOne(
       { _id: new ObjectId(decode_email_verify_token.userId) },
-      { $set: { email_verified_token: '', verify: UserVerifyStatus.Verified, updated_at: new Date() } }
+      { $set: { email_verified_token: '', verify: UserVerifyStatus.Verified }, $currentDate: { updated_at: true } }
     )
     const [accessToken, refreshToken] = await Promise.all([
       generateAccessToken(user._id.toString()),
@@ -116,4 +119,24 @@ export const emailVeryfiedController = async (req: Request, res: Response) => {
   } catch (error) {
     return res.status(500).json({ message: 'Internal server error' })
   }
+}
+
+export const resendVerifyEmailController = async (req: Request, res: Response) => {
+  const { decode_authorization }: any = req
+  console.log(decode_authorization)
+  const { userId } = decode_authorization
+  console.log('user_id', userId)
+  const user = await databaseServices.users.findOne({ _id: new ObjectId(userId) })
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' })
+  }
+  if (user.verify === UserVerifyStatus.Verified) {
+    return res.json({ message: 'Email already verified' })
+  }
+  const email_verified_token = await generateEmailToken(userId)
+  await databaseServices.users.updateOne(
+    { _id: new ObjectId(userId) },
+    { $set: { email_verified_token: email_verified_token }, $currentDate: { updated_at: true } }
+  )
+  return res.json({ message: 'Resend verify email success' })
 }

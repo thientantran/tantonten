@@ -233,3 +233,28 @@ export const emailTokenValidator = validate(
     ['query']
   )
 )
+
+export const emailValidator = validate(
+  checkSchema(
+    {
+      email: {
+        errorMessage: 'Invalid email',
+        isEmail: {
+          errorMessage: 'Invalid email'
+        },
+        trim: true,
+        custom: {
+          options: async (value, { req }) => {
+            const user = await databaseServices.users.findOne({ email: value })
+            if (!user) {
+              throw { message: 'Email is not exists', status: 404 }
+            }
+            req.user = user
+            return true
+          }
+        }
+      }
+    },
+    ['body']
+  )
+)

@@ -67,6 +67,28 @@ export async function generateEmailToken(userId: string): Promise<string> {
   })
 }
 
+export async function generateForgotPasswordToken(userId: string): Promise<string> {
+  const payload = {
+    userId,
+    token_type: TokenType.ForgotPasswordToken
+  }
+
+  const options = {
+    expiresIn: process.env.JWT_REFRESH_EXPIRATION,
+    algorithm: 'HS256' as const
+  }
+
+  // return jwt.sign(payload, secretKey, options)
+  return new Promise<string>((resolve, reject) => {
+    jwt.sign(payload, process.env.JWT_FORGOTPASSWORD_KEY as string, options, (err, token) => {
+      if (err) {
+        reject(err)
+      }
+      resolve(token as string)
+    })
+  })
+}
+
 export const verifyToken = ({ token, secretOrPublicKey }: { token: string; secretOrPublicKey: string }) => {
   return new Promise<jwt.JwtPayload>((resolve, reject) => {
     jwt.verify(token, secretOrPublicKey as Secret, (err, decoded) => {

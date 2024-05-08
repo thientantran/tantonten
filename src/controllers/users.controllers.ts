@@ -5,7 +5,7 @@ import { ObjectId } from 'mongodb'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { User, UserVerifyStatus } from '~/models/schemas/User.schema'
 import databaseServices from '~/services/database.services'
-import { generateAccessToken, generateEmailToken, generateRefreshToken } from '~/utils/jwt'
+import { generateAccessToken, generateEmailToken, generateForgotPasswordToken, generateRefreshToken } from '~/utils/jwt'
 // functions for hasing password, can use bcryptjs instead
 function sha256(content: string) {
   return createHash('sha256').update(content).digest('hex')
@@ -139,4 +139,17 @@ export const resendVerifyEmailController = async (req: Request, res: Response) =
     { $set: { email_verified_token: email_verified_token }, $currentDate: { updated_at: true } }
   )
   return res.json({ message: 'Resend verify email success' })
+}
+export const forgotPasswordController = async (req: Request, res: Response) => {
+  const { user }: any = req
+  const forgot_password_token = await generateForgotPasswordToken(user._id)
+  await databaseServices.users.updateOne(
+    { _id: new ObjectId(user._id) },
+    { $set: { forgot_password_token: forgot_password_token }, $currentDate: { updated_at: true } }
+  )
+  console.log("Send email to user's email")
+  return res.json({
+    message: 'Sent email. Please check your email',
+    data: { forgot_password_token: forgot_password_token }
+  })
 }

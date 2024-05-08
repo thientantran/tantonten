@@ -25,7 +25,7 @@ export const validate = (validation: RunnableValidationChains<ValidationChain>) 
     // cái chỗ này có thể tạo class rồi chỉ cần add thông tin vào class thôi
     const errorMessages = {
       status: httpStatus.UNPRCESSABLE_ENTITY,
-      message: 'validation errors',
+      message: 'Validation errors',
       errors: errors.mapped()
     }
     next(errorMessages)

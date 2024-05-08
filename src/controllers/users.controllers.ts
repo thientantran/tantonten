@@ -158,3 +158,14 @@ export const verifyForgotPasswordController = async (req: Request, res: Response
   const { user }: any = req
   return res.json({ message: 'Verify forgot password success' })
 }
+
+export const resetPasswordController = async (req: Request, res: Response) => {
+  const { password, confirm_password, forgot_password_token } = req.body
+  const { user }: any = req
+  const newPassword = hashPassword(password)
+  await databaseServices.users.updateOne(
+    { _id: new ObjectId(user._id) },
+    { $set: { password: newPassword, forgot_password_token: '' }, $currentDate: { updated_at: true } }
+  )
+  return res.json({ message: 'Reset password success' })
+}

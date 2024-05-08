@@ -1,19 +1,81 @@
 /* eslint-disable prettier/prettier */
-import { NextFunction, Request, Response } from 'express'
-import { checkSchema } from 'express-validator'
+import { ParamSchema, checkSchema } from 'express-validator'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
 import databaseServices from '~/services/database.services'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
 
-export const usersMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  // Middleware logic goes here
-  if (!req.body.username || !req.body.password) {
-    return res.status(400).json({ message: 'Username and password are required' })
+
+const passwordSchema: ParamSchema = {
+  errorMessage: 'Invalid password',
+  notEmpty: { errorMessage: 'Password is required' },
+  isLength: {
+    options: { min: 6, max: 100 },
+    errorMessage: 'Password must be at least 6 characters'
+  },
+  isString: true,
+  isStrongPassword: {
+    options: {
+      minLength: 6,
+      minLowercase: 1,
+      minUppercase: 1,
+      minNumbers: 1,
+      minSymbols: 0
+    },
+    errorMessage:
+      'Password must be at least 6 characters and contain at least 1 lowercase letter, 1 uppercase letter, and 1 number'
   }
-  next()
 }
+
+const confirm_passwordSchema: ParamSchema = {
+  errorMessage: 'Passwords do not match',
+  notEmpty: true,
+  isLength: {
+    options: { min: 6, max: 100 }
+  },
+  isString: true,
+  custom: {
+    options: (value, { req }) => {
+      if (value !== req.body.password) {
+        // value is confirm_password
+        throw new Error('Passwords do not match')
+      }
+      return true
+    }
+  }
+  // isStrongPassword: true
+}
+
+const forgot_password_tokenSchema: ParamSchema = {
+  trim: true,
+  custom: {
+    options: async (value, { req }) => {
+      if (!value) {
+        throw { message: 'forgot password token is required', status: 401 }
+      }
+      try {
+        const decode_forgot_password_token = await verifyToken({ token: value, secretOrPublicKey: process.env.JWT_FORGOTPASSWORD_KEY as string })
+        const user = await databaseServices.users.findOne({ _id: new ObjectId(decode_forgot_password_token.userId) })
+        if (!user) {
+          return { message: 'User not found', status: 404 }
+        }
+        if (user.forgot_password_token !== value) {
+          throw { message: 'Forgot Password token is invalid', status: 401 }
+        }
+        req.user = user
+        return true
+      } catch (error) {
+        if (error instanceof jwt.JsonWebTokenError) {
+          throw { message: error.message, status: 401 }
+        } else {
+          throw { message: "Forgot Password token is invalid", status: 401 }
+        }
+      }
+    }
+  }
+}
+
 export const loginValidator = validate(
   checkSchema(
     {
@@ -82,44 +144,8 @@ export const registerValidator = validate(
           }
         }
       },
-      password: {
-        errorMessage: 'Invalid password',
-        notEmpty: { errorMessage: 'Password is required' },
-        isLength: {
-          options: { min: 6, max: 100 },
-          errorMessage: 'Password must be at least 6 characters'
-        },
-        isString: true,
-        isStrongPassword: {
-          options: {
-            minLength: 6,
-            minLowercase: 1,
-            minUppercase: 1,
-            minNumbers: 1,
-            minSymbols: 0
-          },
-          errorMessage:
-            'Password must be at least 6 characters and contain at least 1 lowercase letter, 1 uppercase letter, and 1 number'
-        }
-      },
-      confirm_password: {
-        errorMessage: 'Passwords do not match',
-        notEmpty: true,
-        isLength: {
-          options: { min: 6, max: 100 }
-        },
-        isString: true,
-        custom: {
-          options: (value, { req }) => {
-            if (value !== req.body.password) {
-              // value is confirm_password
-              throw new Error('Passwords do not match')
-            }
-            return true
-          }
-        }
-        // isStrongPassword: true
-      },
+      password: passwordSchema,
+      confirm_password: confirm_passwordSchema,
       date_of_birth: {
         errorMessage: 'Invalid date of birth',
         isISO8601: {
@@ -263,35 +289,19 @@ export const emailValidator = validate(
 export const ForgotPasswordTokenValidator = validate(
   checkSchema(
     {
-      forgot_password_token: {
-        trim: true,
-        custom: {
-          options: async (value, { req }) => {
-            if (!value) {
-              throw { message: 'forgot password token is required', status: 401 }
-            }
-            try {
-              const decode_forgot_password_token = await verifyToken({ token: value, secretOrPublicKey: process.env.JWT_FORGOTPASSWORD_KEY as string })
-              const user = await databaseServices.users.findOne({ _id: new ObjectId(decode_forgot_password_token.userId) })
-              if (!user) {
-                return { message: 'User not found', status: 404 }
-              }
-              if (user.forgot_password_token !== value) {
-                throw { message: 'Forgot Password token is invalid', status: 401 }
-              }
-              req.user = user
-              return true
-            } catch (error) {
-              if (error instanceof jwt.JsonWebTokenError) {
-                throw { message: error.message, status: 401 }
-              } else {
-                throw { message: "Forgot Password token is invalid", status: 401 }
-              }
-            }
-          }
-        }
-      }
+      forgot_password_token: forgot_password_tokenSchema
     },
     ['query']
+  )
+)
+
+export const resetPasswordValidator = validate(
+  checkSchema(
+    {
+      password: passwordSchema,
+      confirm_password: confirm_passwordSchema,
+      forgot_password_token: forgot_password_tokenSchema
+    },
+    ['body']
   )
 )

@@ -8,6 +8,7 @@ import {
   registerController,
   resendVerifyEmailController,
   resetPasswordController,
+  updateMeController,
   verifyForgotPasswordController
 } from '~/controllers/users.controllers'
 import {
@@ -18,7 +19,8 @@ import {
   loginValidator,
   refreshTokenValidator,
   registerValidator,
-  resetPasswordValidator
+  resetPasswordValidator,
+  veryfiedUserValidator
 } from '~/middlewares/users.middlewares'
 import { wrapSync } from '~/utils/handlers'
 
@@ -33,6 +35,7 @@ usersRouter.post('/forgot-password', emailValidator, forgotPasswordController)
 usersRouter.get('/verify-forgot-password', ForgotPasswordTokenValidator, verifyForgotPasswordController)
 usersRouter.post('/reset-password', resetPasswordValidator, resetPasswordController)
 usersRouter.get('/me', accessTokenValidator, getMeController)
+usersRouter.patch('/me', accessTokenValidator, veryfiedUserValidator, updateMeController)
 // Define your routes here
 
 export default usersRouter

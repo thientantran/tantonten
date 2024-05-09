@@ -20,9 +20,9 @@ export const registerController = async (req: Request, res: Response, next: Next
   const hashedPassword = hashPassword(password)
   const user_id = new ObjectId()
   const [accessToken, refreshToken, email_verified_token] = await Promise.all([
-    generateAccessToken(user_id.toString()),
-    generateRefreshToken(user_id.toString()),
-    generateEmailToken(user_id.toString())
+    generateAccessToken({ userId: user_id.toString(), verify: UserVerifyStatus.Unverified }),
+    generateRefreshToken({ userId: user_id.toString(), verify: UserVerifyStatus.Unverified }),
+    generateEmailToken({ userId: user_id.toString(), verify: UserVerifyStatus.Unverified })
   ])
   const newUser = new User({ _id: user_id, email, password: hashedPassword, name, date_of_birth, email_verified_token })
 
@@ -50,8 +50,8 @@ export const loginController = async (req: Request, res: Response) => {
     return res.status(401).json({ message: 'Wrong password' })
   }
   const [accessToken, refreshToken] = await Promise.all([
-    generateAccessToken(user._id.toString()),
-    generateRefreshToken(user._id.toString())
+    generateAccessToken({ userId: user._id.toString(), verify: user.verify }),
+    generateRefreshToken({ userId: user._id.toString(), verify: user.verify })
   ])
   // chú ý source code hiện tại mỗi lần login thì sẽ tao ra 1 refresh token mới, và lưu vào db, nên khi logout thì sẽ xóa refresh token đó đi, login 2 lần có 2 lần refresh token, logout 1 lần thì xóa 1 cái refresh token ==> login nhiều máy tính, nên thêm 1 tính năng là logout hết máy thì có 1 button, click thì sẽ xoá hết các refresh token
   await databaseServices.refreshToken.insertOne(
@@ -100,8 +100,8 @@ export const emailVeryfiedController = async (req: Request, res: Response) => {
       { $set: { email_verified_token: '', verify: UserVerifyStatus.Verified }, $currentDate: { updated_at: true } }
     )
     const [accessToken, refreshToken] = await Promise.all([
-      generateAccessToken(user._id.toString()),
-      generateRefreshToken(user._id.toString())
+      generateAccessToken({ userId: user._id.toString(), verify: UserVerifyStatus.Verified }),
+      generateRefreshToken({ userId: user._id.toString(), verify: UserVerifyStatus.Verified })
     ])
     await databaseServices.refreshToken.insertOne(
       new RefreshToken({ user_id: new ObjectId(user._id), token: refreshToken })
@@ -133,7 +133,7 @@ export const resendVerifyEmailController = async (req: Request, res: Response) =
   if (user.verify === UserVerifyStatus.Verified) {
     return res.json({ message: 'Email already verified' })
   }
-  const email_verified_token = await generateEmailToken(userId)
+  const email_verified_token = await generateEmailToken({ userId: userId, verify: UserVerifyStatus.Unverified })
   await databaseServices.users.updateOne(
     { _id: new ObjectId(userId) },
     { $set: { email_verified_token: email_verified_token }, $currentDate: { updated_at: true } }
@@ -142,7 +142,7 @@ export const resendVerifyEmailController = async (req: Request, res: Response) =
 }
 export const forgotPasswordController = async (req: Request, res: Response) => {
   const { user }: any = req
-  const forgot_password_token = await generateForgotPasswordToken(user._id)
+  const forgot_password_token = await generateForgotPasswordToken({ userId: user._id, verify: user.verify })
   await databaseServices.users.updateOne(
     { _id: new ObjectId(user._id) },
     { $set: { forgot_password_token: forgot_password_token }, $currentDate: { updated_at: true } }
@@ -183,4 +183,13 @@ export const getMeController = async (req: Request, res: Response) => {
     }
   )
   return res.json({ message: 'Get me success', data: user })
+}
+export const updateMeController = async (req: Request, res: Response) => {
+  // verify ở đây cũng được, nhưng hơi tôns công viết mỗi khi cần, do đó lấy middleware gắn ở route là nhanh
+  // const { decode_authorization }: any = req
+  // const { verify } = decode_authorization
+  // if (verify !== UserVerifyStatus.Verified) {
+  //   return res.status(403).json({ message: 'Email is not verified' })
+  // }
+  return res.json({ message: 'Update me success' })
 }

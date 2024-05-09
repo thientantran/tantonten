@@ -1,7 +1,9 @@
 /* eslint-disable prettier/prettier */
+import { NextFunction, Request, Response } from 'express'
 import { ParamSchema, checkSchema } from 'express-validator'
 import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
+import { UserVerifyStatus } from '~/models/schemas/User.schema'
 import databaseServices from '~/services/database.services'
 import { verifyToken } from '~/utils/jwt'
 import { validate } from '~/utils/validation'
@@ -305,3 +307,16 @@ export const resetPasswordValidator = validate(
     ['body']
   )
 )
+declare module 'express-serve-static-core' {
+  interface Request {
+    decode_authorization?: jwt.JwtPayload;
+  }
+}
+export const veryfiedUserValidator = (req: Request, res: Response, next: NextFunction) => {
+  const { verify }: any = req.decode_authorization
+  if (verify !== UserVerifyStatus.Verified) {
+    return next({ message: 'Email is not verified', status: 403 })
+  }
+  next()
+}
+

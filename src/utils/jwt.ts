@@ -1,11 +1,18 @@
 import jwt, { Secret } from 'jsonwebtoken'
-import { TokenType } from '~/models/schemas/User.schema'
+import { TokenType, UserVerifyStatus } from '~/models/schemas/User.schema'
 
 // xử dụng bất đồng bộ, để khi generate 2 token cùng lúc, nó sẽ chạy song song
-export async function generateAccessToken(userId: string): Promise<string> {
+export async function generateAccessToken({
+  userId,
+  verify
+}: {
+  userId: string
+  verify: UserVerifyStatus
+}): Promise<string> {
   const payload = {
     userId,
-    token_type: TokenType.AccessToken
+    token_type: TokenType.AccessToken,
+    verify
   }
 
   const options = {
@@ -24,10 +31,17 @@ export async function generateAccessToken(userId: string): Promise<string> {
   })
 }
 
-export async function generateRefreshToken(userId: string): Promise<string> {
+export async function generateRefreshToken({
+  userId,
+  verify
+}: {
+  userId: string
+  verify: UserVerifyStatus
+}): Promise<string> {
   const payload = {
     userId,
-    token_type: TokenType.RefreshToken
+    token_type: TokenType.RefreshToken,
+    verify
   }
 
   const options = {
@@ -45,10 +59,17 @@ export async function generateRefreshToken(userId: string): Promise<string> {
     })
   })
 }
-export async function generateEmailToken(userId: string): Promise<string> {
+export async function generateEmailToken({
+  userId,
+  verify
+}: {
+  userId: string
+  verify: UserVerifyStatus
+}): Promise<string> {
   const payload = {
     userId,
-    token_type: TokenType.EmailVerifiedToken
+    token_type: TokenType.EmailVerifiedToken,
+    verify
   }
 
   const options = {
@@ -67,10 +88,17 @@ export async function generateEmailToken(userId: string): Promise<string> {
   })
 }
 
-export async function generateForgotPasswordToken(userId: string): Promise<string> {
+export async function generateForgotPasswordToken({
+  userId,
+  verify
+}: {
+  userId: string
+  verify: UserVerifyStatus
+}): Promise<string> {
   const payload = {
     userId,
-    token_type: TokenType.ForgotPasswordToken
+    token_type: TokenType.ForgotPasswordToken,
+    verify
   }
 
   const options = {

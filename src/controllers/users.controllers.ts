@@ -169,3 +169,18 @@ export const resetPasswordController = async (req: Request, res: Response) => {
   )
   return res.json({ message: 'Reset password success' })
 }
+
+export const getMeController = async (req: Request, res: Response) => {
+  const { decode_authorization }: any = req
+  const user = await databaseServices.users.findOne(
+    { _id: new ObjectId(decode_authorization.userId) },
+    {
+      projection: {
+        password: 0,
+        email_verified_token: 0,
+        forgot_password_token: 0
+      }
+    }
+  )
+  return res.json({ message: 'Get me success', data: user })
+}

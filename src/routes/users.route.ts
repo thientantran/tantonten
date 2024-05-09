@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   emailVeryfiedController,
   forgotPasswordController,
+  getMeController,
   loginController,
   logoutController,
   registerController,
@@ -31,6 +32,7 @@ usersRouter.post('/resend-email', accessTokenValidator, resendVerifyEmailControl
 usersRouter.post('/forgot-password', emailValidator, forgotPasswordController)
 usersRouter.get('/verify-forgot-password', ForgotPasswordTokenValidator, verifyForgotPasswordController)
 usersRouter.post('/reset-password', resetPasswordValidator, resetPasswordController)
+usersRouter.get('/me', accessTokenValidator, getMeController)
 // Define your routes here
 
 export default usersRouter

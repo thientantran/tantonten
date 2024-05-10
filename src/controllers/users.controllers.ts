@@ -2,6 +2,7 @@ import { createHash } from 'crypto'
 import { NextFunction, Request, Response } from 'express'
 import * as core from 'express-serve-static-core'
 import { ObjectId } from 'mongodb'
+import Followers from '~/models/schemas/Followers.schema'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { User, UserVerifyStatus } from '~/models/schemas/User.schema'
 import databaseServices from '~/services/database.services'
@@ -216,4 +217,18 @@ export const getUserProfileController = async (req: Request, res: Response) => {
     return res.status(404).json({ message: 'User not found' })
   }
   return res.json({ message: 'Get user profile success', data: user })
+}
+
+export const followUserController = async (req: Request, res: Response) => {
+  const { decode_authorization }: any = req
+  const { userId } = decode_authorization
+  const { followed_user_id } = req.body
+  const response = await databaseServices.followers.insertOne(
+    new Followers({
+      user_id: new ObjectId(userId),
+      followed_user_id: new ObjectId(followed_user_id),
+      created_at: new Date() // Add the missing created_at property
+    })
+  )
+  return res.json({ message: 'Follow user success' })
 }

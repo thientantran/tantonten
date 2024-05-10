@@ -425,3 +425,31 @@ export const updateMeValidator = validate(
     ['body']
   )
 )
+
+export const followerValidator = validate(
+  checkSchema(
+    {
+      followed_user_id: {
+        custom: {
+          options: async (value, { req }) => {
+            if (ObjectId.isValid(value)) {
+              const { decode_authorization } = req
+              const user = await databaseServices.users.findOne({ _id: new ObjectId(value) })
+              if (!user) {
+                throw { message: "Followed User not found", status: 401 }
+              }
+              const follow = await databaseServices.followers.findOne({ user_id: new ObjectId(decode_authorization.userId), followed_user_id: new ObjectId(value) })
+              console.log(follow)
+              if (follow) {
+                throw { message: "You are already following this user", status: 403 }
+              }
+
+              return true
+            }
+            throw { message: "Invalid followed user id", status: 401 }
+          }
+        }
+      }
+    }, ['body']
+  )
+)

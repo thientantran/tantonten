@@ -191,5 +191,20 @@ export const updateMeController = async (req: Request, res: Response) => {
   // if (verify !== UserVerifyStatus.Verified) {
   //   return res.status(403).json({ message: 'Email is not verified' })
   // }
-  return res.json({ message: 'Update me success' })
+  const { decode_authorization }: any = req
+  const { userId } = decode_authorization
+  const { body } = req
+  const _body = body.date_of_birth ? { ...body, date_of_birth: new Date(body.date_of_birth) } : body
+
+  const response = await databaseServices.users.findOneAndUpdate(
+    {
+      _id: new ObjectId(userId)
+    },
+    {
+      $set: { ..._body },
+      $currentDate: { updated_at: true }
+    }
+  )
+  console.log(response)
+  return res.json({ message: 'Update me success', data: response })
 }

@@ -11,6 +11,7 @@ import {
   updateMeController,
   verifyForgotPasswordController
 } from '~/controllers/users.controllers'
+import { filterMiddleware } from '~/middlewares/middleware'
 import {
   ForgotPasswordTokenValidator,
   accessTokenValidator,
@@ -20,6 +21,7 @@ import {
   refreshTokenValidator,
   registerValidator,
   resetPasswordValidator,
+  updateMeValidator,
   veryfiedUserValidator
 } from '~/middlewares/users.middlewares'
 import { wrapSync } from '~/utils/handlers'
@@ -35,7 +37,14 @@ usersRouter.post('/forgot-password', emailValidator, forgotPasswordController)
 usersRouter.get('/verify-forgot-password', ForgotPasswordTokenValidator, verifyForgotPasswordController)
 usersRouter.post('/reset-password', resetPasswordValidator, resetPasswordController)
 usersRouter.get('/me', accessTokenValidator, getMeController)
-usersRouter.patch('/me', accessTokenValidator, veryfiedUserValidator, updateMeController)
+usersRouter.patch(
+  '/me',
+  accessTokenValidator,
+  veryfiedUserValidator,
+  updateMeValidator,
+  filterMiddleware(['name', 'date_of_birth', 'avatar', 'username', 'cover_photo', 'bio', 'location']),
+  updateMeController
+)
 // Define your routes here
 
 export default usersRouter

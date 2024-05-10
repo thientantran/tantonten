@@ -77,6 +77,27 @@ const forgot_password_tokenSchema: ParamSchema = {
     }
   }
 }
+const nameSchema: ParamSchema = {
+  errorMessage: 'Invalid name',
+  notEmpty: {
+    errorMessage: 'Name is required'
+  },
+  isLength: {
+    options: { min: 1, max: 100 }
+  },
+  isString: true,
+  trim: true
+}
+const date_of_birthSchema: ParamSchema = {
+  isISO8601: {
+    options: {
+      strict: true,
+      strictSeparator: true
+    },
+    errorMessage: 'Invalid date of birth'
+  }
+}
+
 
 export const loginValidator = validate(
   checkSchema(
@@ -115,17 +136,7 @@ export const loginValidator = validate(
 export const registerValidator = validate(
   checkSchema(
     {
-      name: {
-        errorMessage: 'Invalid name',
-        notEmpty: {
-          errorMessage: 'Name is required'
-        },
-        isLength: {
-          options: { min: 1, max: 100 }
-        },
-        trim: true,
-        isString: true
-      },
+      name: nameSchema,
       email: {
         errorMessage: 'Invalid email',
         notEmpty: {
@@ -148,15 +159,7 @@ export const registerValidator = validate(
       },
       password: passwordSchema,
       confirm_password: confirm_passwordSchema,
-      date_of_birth: {
-        errorMessage: 'Invalid date of birth',
-        isISO8601: {
-          options: {
-            strict: true,
-            strictSeparator: true
-          }
-        }
-      }
+      date_of_birth: date_of_birthSchema
     },
     ['body']
   )
@@ -307,12 +310,12 @@ export const resetPasswordValidator = validate(
     ['body']
   )
 )
-declare module 'express-serve-static-core' {
-  interface Request {
-    decode_authorization?: jwt.JwtPayload;
-  }
-}
-export const veryfiedUserValidator = (req: Request, res: Response, next: NextFunction) => {
+// declare module 'express-serve-static-core' {
+//   interface Request {
+//     decode_authorization?: jwt.JwtPayload;
+//   }
+// }
+export const veryfiedUserValidator = (req: Request & { decode_authorization?: jwt.JwtPayload; }, res: Response, next: NextFunction) => {
   const { verify }: any = req.decode_authorization
   if (verify !== UserVerifyStatus.Verified) {
     return next({ message: 'Email is not verified', status: 403 })
@@ -320,3 +323,105 @@ export const veryfiedUserValidator = (req: Request, res: Response, next: NextFun
   next()
 }
 
+
+export const updateMeValidator = validate(
+  checkSchema(
+    {
+      name: {
+        optional: true,
+        ...nameSchema,
+        notEmpty: undefined
+      },
+      date_of_birth: {
+        ...date_of_birthSchema,
+        optional: true
+      },
+      bio: {
+        optional: true,
+        isString: {
+          errorMessage: "Bio must be a string"
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 200
+          },
+          errorMessage: "Bio must be between 1 and 200 characters"
+        }
+      },
+      location: {
+        optional: true,
+        isString: {
+          errorMessage: "Location must be a string"
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 200
+          },
+          errorMessage: "Location must be between 1 and 200 characters"
+        }
+      },
+      website: {
+        optional: true,
+        isString: {
+          errorMessage: "Website must be a string"
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 200
+          },
+          errorMessage: "Website must be between 1 and 200 characters"
+        }
+      },
+      username: {
+        optional: true,
+        isString: {
+          errorMessage: "username must be a string"
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 200
+          },
+          errorMessage: "username must be between 1 and 200 characters"
+        }
+      },
+      avatar: {
+        optional: true,
+        isString: {
+          errorMessage: "Avatar must be a string"
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 400
+          },
+          errorMessage: "Avatar must be between 1 and 200 characters"
+        }
+      },
+      cover_phto: {
+        optional: true,
+        isString: {
+          errorMessage: "Cover Photo must be a string"
+        },
+        trim: true,
+        isLength: {
+          options: {
+            min: 1,
+            max: 400
+          },
+          errorMessage: "Cover photo must be between 1 and 200 characters"
+        }
+      }
+    }
+    ,
+    ['body']
+  )
+)

@@ -208,3 +208,12 @@ export const updateMeController = async (req: Request, res: Response) => {
   console.log(response)
   return res.json({ message: 'Update me success', data: response })
 }
+
+export const getUserProfileController = async (req: Request, res: Response) => {
+  const { username } = req.params
+  const user = await databaseServices.users.findOne({ _id: new ObjectId(username) })
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' })
+  }
+  return res.json({ message: 'Get user profile success', data: user })
+}

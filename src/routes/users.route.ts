@@ -3,6 +3,7 @@ import {
   emailVeryfiedController,
   forgotPasswordController,
   getMeController,
+  getUserProfileController,
   loginController,
   logoutController,
   registerController,
@@ -45,6 +46,7 @@ usersRouter.patch(
   filterMiddleware(['name', 'date_of_birth', 'avatar', 'username', 'cover_photo', 'bio', 'location']),
   updateMeController
 )
+usersRouter.get('/:username', getUserProfileController)
 // Define your routes here
 
 export default usersRouter

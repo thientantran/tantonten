@@ -10,6 +10,7 @@ import {
   registerController,
   resendVerifyEmailController,
   resetPasswordController,
+  unFollowUserController,
   updateMeController,
   verifyForgotPasswordController
 } from '~/controllers/users.controllers'
@@ -24,6 +25,7 @@ import {
   refreshTokenValidator,
   registerValidator,
   resetPasswordValidator,
+  unfollowerValidator,
   updateMeValidator,
   veryfiedUserValidator
 } from '~/middlewares/users.middlewares'
@@ -50,6 +52,13 @@ usersRouter.patch(
 )
 usersRouter.get('/:username', getUserProfileController)
 usersRouter.post('/follow', accessTokenValidator, veryfiedUserValidator, followerValidator, followUserController)
+usersRouter.delete(
+  '/follow/:followed_user_id',
+  accessTokenValidator,
+  veryfiedUserValidator,
+  unfollowerValidator,
+  unFollowUserController
+)
 // Define your routes here
 
 export default usersRouter

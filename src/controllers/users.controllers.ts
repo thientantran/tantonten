@@ -232,3 +232,14 @@ export const followUserController = async (req: Request, res: Response) => {
   )
   return res.json({ message: 'Follow user success' })
 }
+
+export const unFollowUserController = async (req: Request, res: Response) => {
+  const { decode_authorization }: any = req
+  const { userId } = decode_authorization
+  const { followed_user_id } = req.params
+  const response = await databaseServices.followers.deleteOne({
+    user_id: new ObjectId(userId),
+    followed_user_id: new ObjectId(followed_user_id)
+  })
+  return res.json({ message: 'Unfollow user success' })
+}

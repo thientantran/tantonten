@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { NextFunction, Request, Response } from 'express'
 import * as core from 'express-serve-static-core'
-import { ObjectId } from 'mongodb'
+import { ObjectId, ReturnDocument } from 'mongodb'
 import Followers from '~/models/schemas/Followers.schema'
 import RefreshToken from '~/models/schemas/RefreshToken.schema'
 import { User, UserVerifyStatus } from '~/models/schemas/User.schema'
@@ -204,6 +204,9 @@ export const updateMeController = async (req: Request, res: Response) => {
     {
       $set: { ..._body },
       $currentDate: { updated_at: true }
+    },
+    {
+      returnDocument: ReturnDocument.AFTER
     }
   )
   console.log(response)
@@ -212,7 +215,7 @@ export const updateMeController = async (req: Request, res: Response) => {
 
 export const getUserProfileController = async (req: Request, res: Response) => {
   const { username } = req.params
-  const user = await databaseServices.users.findOne({ _id: new ObjectId(username) })
+  const user = await databaseServices.users.findOne({ username: username })
   if (!user) {
     return res.status(404).json({ message: 'User not found' })
   }

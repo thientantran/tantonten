@@ -25,6 +25,8 @@ interface UserType {
   verify?: UserVerifyStatus
 
   bio?: string
+  username?: string
+  website?: string
   location?: string
   avatar?: string
   cover_photo?: string
@@ -43,6 +45,8 @@ export class User {
   verify: UserVerifyStatus
 
   bio: string
+  username: string
+  website: string
   location: string
   avatar: string
   cover_photo: string
@@ -59,6 +63,8 @@ export class User {
     this.forgot_password_token = user.forgot_password_token || ''
     this.verify = user.verify || UserVerifyStatus.Unverified
     this.bio = user.bio || ''
+    this.username = user.username || `${user.name}${Math.random().toString(36).substring(2)}`.toLowerCase()
+    this.website = user.website || ''
     this.location = user.location || ''
     this.avatar = user.avatar || ''
     this.cover_photo = user.cover_photo || ''

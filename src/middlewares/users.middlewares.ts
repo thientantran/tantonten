@@ -384,12 +384,18 @@ export const updateMeValidator = validate(
           errorMessage: "username must be a string"
         },
         trim: true,
-        isLength: {
-          options: {
-            min: 1,
-            max: 200
-          },
-          errorMessage: "username must be between 1 and 200 characters"
+        custom: {
+          options: async (value, { req }) => {
+            const REGEX_USERNAME = /^[a-zA-Z0-9_]{5,15}$/; // Add the regular expression pattern for the username
+            if (REGEX_USERNAME.test(value) === false) {
+              throw { message: "Invalid username", status: 401 }
+            }
+            const user = await databaseServices.users.findOne({ username: value })
+            if (user) {
+              throw { message: "Username already exists", status: 401 }
+            }
+            return true
+          }
         }
       },
       avatar: {

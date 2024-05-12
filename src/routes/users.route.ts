@@ -8,6 +8,7 @@ import {
   getUserProfileController,
   loginController,
   logoutController,
+  oauthController,
   registerController,
   resendVerifyEmailController,
   resetPasswordController,
@@ -36,6 +37,7 @@ const usersRouter = Router()
 
 usersRouter.post('/register', registerValidator, wrapSync(registerController))
 usersRouter.post('/login', loginValidator, loginController)
+usersRouter.get('/oauth/google', oauthController)
 usersRouter.post('/logout', accessTokenValidator, refreshTokenValidator, logoutController)
 usersRouter.get('/verify-email', emailTokenValidator, emailVeryfiedController)
 usersRouter.post('/resend-email', accessTokenValidator, resendVerifyEmailController)

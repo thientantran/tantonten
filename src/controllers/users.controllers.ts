@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { createHash } from 'crypto'
 import { NextFunction, Request, Response } from 'express'
 import * as core from 'express-serve-static-core'
@@ -267,4 +268,80 @@ export const changePasswordController = async (req: Request, res: Response) => {
     { $set: { password: hashedNewPassword }, $currentDate: { updated_at: true } }
   )
   return res.json({ message: 'Change password success' })
+}
+
+export const oauthController = async (req: Request, res: Response) => {
+  const { code } = req.query
+  const body_google = {
+    code,
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    redirect_uri: process.env.GOOGLE_REDIRECT_URL,
+    grant_type: 'authorization_code',
+    access_type: 'offline'
+  }
+  console.log(body_google)
+  const { data } = await axios.post('https://oauth2.googleapis.com/token', body_google, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  })
+  //tra ve access_token, refresh_token, id_token, co the dung id_token de lay thong tin user bang cach decode no
+  // hoac get user info bang cach call api https://www.googleapis.com/oauth2/v1/userinfo?access_token=access_token
+  const { access_token, refresh_token, id_token } = data
+  const { data: userInfo } = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
+    params: {
+      access_token,
+      alt: 'json'
+    },
+    headers: {
+      Authorization: `Bearer ${id_token}`
+    }
+  })
+  if (!userInfo.verified_email) {
+    throw { message: 'Gmail is not verified', status: 400 }
+  }
+  const user = await databaseServices.users.findOne({ email: userInfo.email })
+  if (user) {
+    // throw { message: 'User already exists', status: 400 }
+    const [accessToken, refreshToken] = await Promise.all([
+      generateAccessToken({ userId: user._id.toString(), verify: user.verify }),
+      generateRefreshToken({ userId: user._id.toString(), verify: user.verify })
+    ])
+    await databaseServices.refreshToken.insertOne(
+      new RefreshToken({ user_id: new ObjectId(user._id), token: refreshToken })
+    )
+
+    const urlRedirect = `${process.env.CLIENT_REDIRECT_CALLBACK}?access_token=${accessToken}&refresh_token=${refreshToken}&new_user=0`
+    return res.redirect(urlRedirect)
+    // return res.json({
+    //   message: 'Login successful',
+    //   data: {
+    //     ...user,
+    //     access_token: accessToken,
+    //     refresh_token: refreshToken
+    //   }
+    // })
+  }
+  const password = userInfo.id
+  const hashedPassword = hashPassword(password)
+  const user_id = new ObjectId()
+  const [accessToken, refreshToken] = await Promise.all([
+    generateAccessToken({ userId: user_id.toString(), verify: UserVerifyStatus.Unverified }),
+    generateRefreshToken({ userId: user_id.toString(), verify: UserVerifyStatus.Unverified })
+  ])
+
+  const newUser = new User({
+    _id: user_id,
+    email: userInfo.email,
+    password: hashedPassword,
+    name: userInfo.name,
+    date_of_birth: new Date(),
+    verify: UserVerifyStatus.Verified,
+    avatar: userInfo.picture
+  })
+  await databaseServices.refreshToken.insertOne(new RefreshToken({ user_id: user_id, token: refreshToken }))
+  const response = await databaseServices.users.insertOne(newUser)
+  const urlRedirect = `${process.env.CLIENT_REDIRECT_CALLBACK}?access_token=${accessToken}&refresh_token=${refreshToken}&new_user=1`
+  return res.redirect(urlRedirect)
 }

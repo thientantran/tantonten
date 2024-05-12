@@ -246,3 +246,25 @@ export const unFollowUserController = async (req: Request, res: Response) => {
   })
   return res.json({ message: 'Unfollow user success' })
 }
+
+export const changePasswordController = async (req: Request, res: Response) => {
+  const { decode_authorization }: any = req
+  const { userId } = decode_authorization
+  const { old_password, new_password, confirm_password } = req.body
+  const user = await databaseServices.users.findOne({ _id: new ObjectId(userId) })
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' })
+  }
+  if (user.password !== hashPassword(old_password)) {
+    return res.status(401).json({ message: 'Wrong password' })
+  }
+  if (new_password !== confirm_password) {
+    return res.status(400).json({ message: 'Confirm password is not match' })
+  }
+  const hashedNewPassword = hashPassword(new_password)
+  await databaseServices.users.updateOne(
+    { _id: new ObjectId(userId) },
+    { $set: { password: hashedNewPassword }, $currentDate: { updated_at: true } }
+  )
+  return res.json({ message: 'Change password success' })
+}

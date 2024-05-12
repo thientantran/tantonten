@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  changePasswordController,
   emailVeryfiedController,
   followUserController,
   forgotPasswordController,
@@ -59,6 +60,8 @@ usersRouter.delete(
   unfollowerValidator,
   unFollowUserController
 )
+
+usersRouter.patch('/changepassword', accessTokenValidator, veryfiedUserValidator, changePasswordController)
 // Define your routes here
 
 export default usersRouter

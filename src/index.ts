@@ -17,6 +17,7 @@ app.get('/', (req, res) => {
 })
 //error handling middleware phai de cuoi cung
 app.use((error: any, req: Request, res: Response, next: NextFunction): void => {
+  console.log(error)
   res.status(error.status || 500).json(omit(error, ['status']))
 })
 

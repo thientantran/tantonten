@@ -1,14 +1,17 @@
 import express, { NextFunction, Request, Response } from 'express'
 import { omit } from 'lodash'
+import mediaRouter from './routes/media.route'
 import usersRouter from './routes/users.route'
 import databaseServices from './services/database.services'
+import { initFolder } from './utils/file'
 
 const app = express()
 const port = 4000
 databaseServices.connect()
+initFolder()
 app.use(express.json())
 app.use('/api', usersRouter)
-
+app.use('/media', mediaRouter)
 app.get('/', (req, res) => {
   res.send('Hello, World!')
 })

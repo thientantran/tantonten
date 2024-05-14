@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
+import fs from 'fs'
 import path from 'path'
+import sharp from 'sharp'
 export const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
   // do formidable version3 bien dich theo es module, nhung code minh bien dich theo common js, nen phai dung dynamic import
   const formidable = (await import('formidable')).default
@@ -23,7 +25,7 @@ export const uploadImage = async (req: Request, res: Response, next: NextFunctio
 
   // tuy nhiên thực tế, filter sẽ lọc từng item trong files, nếu phần tử đầu tiên nó thoả nó vẫn nhảy vào parse như thường, mặc dùng files là rỗng
   // rất tào lao
-  form.parse(req, (error, fields, files) => {
+  form.parse(req, async (error, fields, files) => {
     console.log('fiels', files)
     if (error) {
       // return next({ status: 400, message: 'file too big' })
@@ -42,7 +44,26 @@ export const uploadImage = async (req: Request, res: Response, next: NextFunctio
     if (!files || !files.image) {
       return next({ status: 400, message: 'file is required' })
     }
-    res.json({ fields, files })
+    const inputPath = files.image[0].filepath
+    const outputPath = inputPath.replace(/\.[^/.]+$/, '') + '.jpeg'
+    try {
+      // loại bỏ metadata của ảnh, giảm dung lượng ảnh
+      const buffer = await sharp(inputPath).jpeg({ quality: 90 }).toBuffer()
+      await fs.promises.writeFile(outputPath, buffer)
+
+      // Replace the original file path with the new JPEG file path
+      files.image[0].filepath = outputPath
+      fs.unlink(inputPath, (err) => {
+        if (err) {
+          console.error(`Failed to delete original image at ${inputPath}:`, err)
+        }
+      })
+    } catch (err) {
+      return next({ status: 500, message: 'Failed to convert image to JPEG' })
+    }
+    const imageName = path.basename(outputPath)
+    console.log('Image Name:', imageName)
+    res.json({ file: `http://localhost:3000/upload/${imageName}` })
   })
   // const data = await handleUploadOneImage(req, res)
 }

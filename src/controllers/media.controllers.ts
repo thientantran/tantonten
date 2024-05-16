@@ -10,7 +10,7 @@ export const uploadImage = async (req: Request, res: Response, next: NextFunctio
   const formidable = (await import('formidable')).default
   const form = formidable({
     uploadDir: path.resolve('upload'),
-    maxFiles: 1,
+    maxFiles: 4,
     keepExtensions: true,
     maxFileSize: 3 * 1024 * 1024,
     filter: function ({ name, originalFilename, mimetype }) {
@@ -47,26 +47,36 @@ export const uploadImage = async (req: Request, res: Response, next: NextFunctio
     if (!files || !files.image) {
       return next({ status: 400, message: 'file is required' })
     }
-    const inputPath = files.image[0].filepath
-    const outputPath = inputPath.replace(/\.[^/.]+$/, '') + '.jpeg'
-    try {
-      // loại bỏ metadata của ảnh, giảm dung lượng ảnh
-      const buffer = await sharp(inputPath).jpeg({ quality: 90 }).toBuffer()
-      await fs.promises.writeFile(outputPath, buffer)
+    const imageFiles = files.image
+    const convertedImages = []
 
-      // Replace the original file path with the new JPEG file path
-      files.image[0].filepath = outputPath
-      fs.unlink(inputPath, (err) => {
-        if (err) {
-          console.error(`Failed to delete original image at ${inputPath}:`, err)
-        }
-      })
-    } catch (err) {
-      return next({ status: 500, message: 'Failed to convert image to JPEG' })
+    for (const imageFile of imageFiles) {
+      const inputPath = imageFile.filepath
+      const outputPath = inputPath.replace(/\.[^/.]+$/, '') + '.jpeg'
+      try {
+        // loại bỏ metadata của ảnh, giảm dung lượng ảnh
+        const buffer = await sharp(inputPath).jpeg({ quality: 90 }).toBuffer()
+        await fs.promises.writeFile(outputPath, buffer)
+
+        // Replace the original file path with the new JPEG file path
+        imageFile.filepath = outputPath
+        fs.unlink(inputPath, (err) => {
+          if (err) {
+            console.error(`Failed to delete original image at ${inputPath}:`, err)
+          }
+        })
+
+        const imageName = path.basename(outputPath)
+        convertedImages.push(imageName)
+      } catch (err) {
+        return next({ status: 500, message: 'Failed to convert image to JPEG' })
+      }
     }
-    const imageName = path.basename(outputPath)
+
     res.json({
-      file: !isProduction ? `${process.env.HOST}/upload/${imageName}` : `http://localhost:4000/upload/${imageName}`
+      files: convertedImages.map((imageName) => {
+        return !isProduction ? `${process.env.HOST}/upload/${imageName}` : `http://localhost:4000/upload/${imageName}`
+      })
     })
   })
   // const data = await handleUploadOneImage(req, res)

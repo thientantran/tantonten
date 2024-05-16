@@ -1,7 +1,10 @@
+import { config } from 'dotenv'
 import { NextFunction, Request, Response } from 'express'
 import fs from 'fs'
 import path from 'path'
 import sharp from 'sharp'
+import { isProduction } from '..'
+config()
 export const uploadImage = async (req: Request, res: Response, next: NextFunction) => {
   // do formidable version3 bien dich theo es module, nhung code minh bien dich theo common js, nen phai dung dynamic import
   const formidable = (await import('formidable')).default
@@ -62,8 +65,9 @@ export const uploadImage = async (req: Request, res: Response, next: NextFunctio
       return next({ status: 500, message: 'Failed to convert image to JPEG' })
     }
     const imageName = path.basename(outputPath)
-    console.log('Image Name:', imageName)
-    res.json({ file: `http://localhost:3000/upload/${imageName}` })
+    res.json({
+      file: !isProduction ? `${process.env.HOST}/upload/${imageName}` : `http://localhost:4000/upload/${imageName}`
+    })
   })
   // const data = await handleUploadOneImage(req, res)
 }
